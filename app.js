@@ -54,6 +54,16 @@ function renderTime() {
   renderMoon(d, en);
   renderWords(H, M, en);
   renderMap();
+  burnInShift(d);
+}
+
+// OLED yanma koruması: bütün yüzler dakikada bir en fazla 1-2 px kayar, ±BURN_PX içinde dolaşır.
+// İki farklı periyot (17 ve 23 dakika) birlikte ~6,5 saatte bütün alanı tarar; geçiş animasyonsuzdur.
+const BURN_PX = 3;
+function burnInShift(d) {
+  const t = Math.floor(d.getTime() / 60000), TAU = 2 * Math.PI;
+  const dx = Math.round(BURN_PX * Math.sin(t * TAU / 17)), dy = Math.round(BURN_PX * Math.sin(t * TAU / 23 + 1));
+  $('#faces').style.transform = `translate(${dx}px,${dy}px)`;
 }
 
 function renderYuvarlak(hh, mm) {
@@ -300,10 +310,13 @@ function renderBattery() {
   el.classList.toggle('charging', charging);
   $('#bat-bolt').hidden = !charging;
 }
+// iOS Safari pil bilgisi vermiyor: orada gösterge, sağ üst dokunma alanı ve ayarlardaki pil ipucu tamamen kalkar.
+function hideBattery() { S.showBattery = false; $('#bat-hit').hidden = true; $('#hint-bat').hidden = true; }
 if (navigator.getBattery) navigator.getBattery().then(b => {
   const upd = () => { S.battery = { level: Math.round(b.level * 100), charging: b.charging }; renderBattery(); renderSettings(); };
   upd(); b.addEventListener('levelchange', upd); b.addEventListener('chargingchange', upd);
-}).catch(() => {});
+}).catch(hideBattery);
+else hideBattery();
 
 // ---------- ekranı açık tutma ----------
 let wl = null, video = null;
@@ -394,7 +407,7 @@ function renderSettings() {
   $('#dim-range').value = st.dim || 0;
   setText('#dim-label', (st.dim || 0) + '%');
   setText('#wake-text', WAKE_TEXT[S.wake]);
-  setText('#bat-source', S.battery ? 'Pil: cihazdan okunuyor' : 'Pil: bu tarayıcı pil bilgisi vermiyor');
+  setText('#bat-source', S.battery ? 'Pil: cihazdan okunuyor' : '');
 }
 
 // ---------- kurulum ipucu ----------

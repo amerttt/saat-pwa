@@ -8,7 +8,7 @@ Canlı adres: https://amerttt.github.io/saat-pwa/
 
 - Sağa/sola kaydırarak 10 yüz arasında geçilir: Yuvarlak, Analog, Dünya, Parlayan, Modernist, Klasik, Minimal, Yıldız, Ay, Sözcük. Klavyede ok tuşları da çalışır.
 - Ekrana uzun basınca (yaklaşık yarım saniye) ayarlar açılır: saat biçimi, gece modu, tarih, saniye ibresi, loşluk, gün dili, ekranı açık tutma.
-- Sağ üst köşeye dokunmak pil göstergesini açıp kapatır.
+- Battery API olan tarayıcılarda sağ üst köşeye dokunmak pil göstergesini açıp kapatır.
 - Son seçilen yüz ve ayarlar `localStorage` içinde `saat.v1` anahtarında saklanır.
 
 ## Pil ve ısı
@@ -17,6 +17,7 @@ Canlı adres: https://amerttt.github.io/saat-pwa/
 - Saniye ibresi saf CSS animasyonudur (`steps(60)`), her saniye JavaScript çalışmaz. Varsayılan olarak kapalıdır.
 - Kadran çizgileri, yıldız noktaları ve harita yalnız dakika ya da ekran boyutu değişince yeniden hesaplanır.
 - Ekran Screen Wake Lock API ile açık tutulur (iOS 16.4 ve sonrası, ana ekrana eklenmiş PWA). Daha eski iOS'ta sessiz, döngülü bir video yedek olarak kullanılır.
+- OLED yanma koruması: bütün yüzler dakikada bir en fazla 1-2 piksel kayar ve ±3 piksellik bir alanda dolaşır. Böylece rakamların kenarları gece boyunca aynı piksellerde durmaz. Kayma animasyonsuzdur, ek iş yükü getirmez.
 
 ## Bağımlılık
 
@@ -38,4 +39,4 @@ Service worker yalnız `https` ya da `localhost` üzerinde kaydolur.
 
 ## Bilinen sınır
 
-iOS Safari pil bilgisi vermez (Battery API yok). Bu yüzden iPhone'da pil göstergesi yüzde yerine "–" gösterir. Battery API olan tarayıcılarda gerçek değer ve şarj durumu görünür.
+iOS Safari pil bilgisi vermez (Battery API yok). Bu yüzden iPhone'da pil göstergesi ve sağ üst köşedeki dokunma alanı hiç yoktur. Battery API olan tarayıcılarda gerçek değer ve şarj durumu görünür.

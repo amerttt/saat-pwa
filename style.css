@@ -1,0 +1,87 @@
+html,body{margin:0;background:#000;overflow:hidden;height:100%}
+@keyframes sheetIn{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes swapA{0%,62%{opacity:1}70%,92%{opacity:0}100%{opacity:1}}
+@keyframes swapB{0%,62%{opacity:0}70%,92%{opacity:1}100%{opacity:0}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+input[type=range]{accent-color:#fff}
+[hidden]{display:none!important}
+
+#root{position:fixed;inset:0;background:#000;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:default}
+/* Dikey tutuşta sahne 90° döner; genişlik/yükseklik JS ile px olarak verilir. */
+#stage{position:absolute;left:0;top:0;width:100%;height:100%;transform-origin:0 0;container-type:size;overflow:hidden;background:#000}
+#stage.portrait{transform:rotate(90deg) translateY(-100%)}
+
+#faces{position:absolute;inset:0}
+body.night #faces{filter:grayscale(1) brightness(.5)}
+#track{display:flex;height:100%;width:1000%;will-change:transform;transition:transform .45s cubic-bezier(.22,.61,.36,1)}
+#track.dragging{transition:none}
+.face{flex:0 0 10%;height:100%;position:relative;overflow:hidden;background:#000}
+.face.center{display:flex;align-items:center;justify-content:center}
+
+.date{display:flex;line-height:1}
+body:not(.show-date) .date{display:none}
+
+/* Yuvarlak */
+#yv>span{mix-blend-mode:screen;position:relative}
+.yv-colon{display:flex;flex-direction:column;gap:13cqh;margin:0 .04em 0 .2em;position:relative;z-index:6}
+.yv-colon>i{display:block;width:9cqh;height:9cqh;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f1f5f9,#98a1ab)}
+
+/* Analog + Klasik */
+.tick{position:absolute;border-radius:9px}
+.num{position:absolute;transform:translate(-50%,-50%);line-height:1}
+.hand{position:absolute;left:50%;top:50%;width:0;height:0}
+.hand.hour{transform:rotate(calc(var(--hd,0)*1deg))}
+.hand.min{transform:rotate(calc(var(--md,0)*1deg))}
+.hand>.stem{position:absolute;left:-.45cqh;bottom:0;width:.9cqh;height:7cqh}
+.hand>.blade{position:absolute;left:-1.6cqh;bottom:5.5cqh;width:3.2cqh;border-radius:2cqh}
+/* Saniye: tamamen CSS; her saniye JS çalışmaz. Gecikme JS'te saniyeye hizalanır. */
+.sec{position:absolute;left:50%;top:50%;width:0;height:0;animation:spin 60s steps(60) infinite}
+.sec>i{position:absolute;left:-.25cqh;bottom:-9cqh;width:.5cqh;height:46cqh;border-radius:.5cqh}
+.cap{position:absolute;left:50%;top:50%;width:4.4cqh;height:4.4cqh;margin:-2.2cqh 0 0 -2.2cqh;border-radius:50%}
+
+#min-fill{width:var(--mp,0%)}
+
+/* Yıldız */
+#bg-stars>i,#stars>i{position:absolute;border-radius:50%}
+#bg-stars>i{background:#c9c4b4}
+#stars>i{background:#e8e2d0;box-shadow:0 0 var(--glow,0) rgba(201,196,180,.5)}
+
+#map svg{width:100%;height:100%;display:block}
+
+#dim{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:20}
+
+#dots{position:absolute;left:50%;bottom:2.5cqh;transform:translateX(-50%);display:flex;gap:7px;z-index:22;pointer-events:none;animation:fadeIn .2s ease}
+#dots>i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3)}
+#dots>i.on{background:#fff}
+
+/* Pil */
+#bat-hit{position:absolute;top:0;right:0;width:96px;height:96px;z-index:25;display:flex;align-items:flex-start;justify-content:flex-end;padding:12px;box-sizing:border-box;cursor:pointer}
+#bat{position:relative;width:52px;height:52px;animation:fadeIn .25s ease}
+#bat>svg{width:52px;height:52px;transform:rotate(-90deg)}
+.bat-c{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+#bat-num{font-family:Outfit,sans-serif;font-weight:500;font-size:15px}
+#bat-bolt svg{width:12px;height:18px}
+#bat.charging #bat-num{animation:swapA 7s ease-in-out infinite}
+#bat.charging #bat-bolt{opacity:0;animation:swapB 7s ease-in-out infinite}
+
+/* Kurulum ipucu */
+/* Ortalama `translate` ile: sheetIn animasyonu `transform`u ezdiği için orada durmuyor. */
+#install{position:absolute;left:50%;bottom:16px;translate:-50% 0;z-index:28;width:min(440px,86cqw);background:rgba(28,28,30,.96);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 16px;box-sizing:border-box;display:flex;align-items:center;gap:14px;color:#fff;font-family:Outfit,sans-serif;animation:sheetIn .35s cubic-bezier(.2,.8,.2,1);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#install img{width:44px;height:44px;border-radius:10px;flex:none}
+
+button{font:inherit;color:inherit;border:0;margin:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.btn{flex:none;padding:9px 14px;border-radius:10px;background:#fff;color:#000;font-weight:600;font-size:14px}
+
+/* Ayarlar */
+#sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:30;animation:fadeIn .2s ease}
+#sheet{width:min(720px,96cqw);max-height:94cqh;overflow:auto;background:#1c1c1e;border-radius:20px 20px 0 0;padding:14px 20px 20px;box-sizing:border-box;color:#fff;font-family:Outfit,sans-serif;animation:sheetIn .32s cubic-bezier(.2,.8,.2,1);touch-action:pan-y}
+#sheet .grid{display:grid;grid-template-columns:1fr 1fr;column-gap:28px}
+#sheet .row{display:flex;align-items:center;justify-content:space-between;min-height:46px;border-bottom:1px solid rgba(255,255,255,.08);font-size:15px;gap:10px}
+.seg{display:flex;background:#2c2c2e;border-radius:9px;padding:2px;font-size:13px;font-weight:500}
+.seg>button{padding:5px 12px;border-radius:7px;color:#aeaeb2}
+.seg>button.sel{background:#636366;color:#fff}
+.sw{flex:none;width:51px;height:31px;border-radius:16px;background:#39393d;position:relative;transition:background .2s;padding:0}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.sw[aria-checked=true]{background:#30d158}
+.sw[aria-checked=true]::after{left:22px}

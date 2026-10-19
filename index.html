@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Saat</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Saat">
+<meta name="theme-color" content="#000000">
+<meta name="description" content="Gece masa saati: tam ekran, yatay, çevrimdışı çalışır.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="root">
+<div id="stage">
+
+<div id="faces">
+<div id="track">
+
+<section class="face center" data-face="Yuvarlak">
+  <div id="yv" style="display:flex; align-items:center; font-family:Fredoka, sans-serif; font-weight:700; font-size:66cqh; line-height:1; letter-spacing:-0.17em; padding-right:0.17em"></div>
+  <div class="date" style="position:absolute; left:50%; bottom:7cqh; transform:translateX(-50%); gap:.35em; font-family:Outfit, sans-serif; font-weight:500; font-size:6.5cqh"><span class="dn" style="color:#fff"></span><span class="dw" style="color:#4da3f0"></span></div>
+</section>
+
+<section class="face" data-face="Analog">
+  <div id="an-ticks"></div>
+  <div class="num" style="left:50%; top:21%; font-family:Unbounded, sans-serif; font-weight:600; font-size:13cqh; color:#fff">12</div>
+  <div class="num" style="left:81%; top:50%; font-family:Unbounded, sans-serif; font-weight:600; font-size:13cqh; color:#fff">3</div>
+  <div class="num" style="left:50%; top:79%; font-family:Unbounded, sans-serif; font-weight:600; font-size:13cqh; color:#fff">6</div>
+  <div class="num" style="left:19%; top:50%; font-family:Unbounded, sans-serif; font-weight:600; font-size:13cqh; color:#fff">9</div>
+  <div class="date" style="position:absolute; left:69.5%; top:50%; transform:translate(-50%,-50%); gap:.3em; font-family:Outfit, sans-serif; font-weight:500; font-size:6.5cqh"><span class="dn" style="color:#fff"></span><span class="dw" style="color:#e5484d"></span></div>
+  <div class="hand hour"><i class="stem" style="background:#fff"></i><i class="blade" style="height:19cqh; background:#fff"></i></div>
+  <div class="hand min"><i class="stem" style="background:#fff"></i><i class="blade" style="height:34cqh; background:#fff"></i></div>
+  <div class="sec" hidden><i style="background:#ff9f0a"></i></div>
+  <div class="cap" style="background:radial-gradient(circle, #000 0 0.5cqh, #ff9f0a 0.6cqh 1.3cqh, #fff 1.4cqh)"></div>
+</section>
+
+<section class="face" data-face="Dünya">
+  <div id="map" style="position:absolute; inset:5cqh 3cqw 5cqh 3cqw; display:flex; align-items:center; justify-content:center"></div>
+  <div id="map-pending" hidden style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-family:Outfit, sans-serif; font-size:3.5cqh; color:#5a5a60">Harita yükleniyor…</div>
+  <div style="position:absolute; left:5cqw; bottom:8cqh; text-shadow:0 0 10px #000, 0 0 24px #000">
+    <div style="font-family:Outfit, sans-serif; font-weight:500; font-size:7cqh; line-height:1; color:#ff9f0a; margin-bottom:1.5cqh">İstanbul</div>
+    <div class="t-hm" style="font-family:Outfit, sans-serif; font-weight:500; font-size:22cqh; line-height:.9; letter-spacing:-0.02em; color:#fff"></div>
+  </div>
+  <div class="date" style="position:absolute; left:5cqw; top:8cqh; gap:.35em; font-family:Outfit, sans-serif; font-weight:500; font-size:6cqh; text-shadow:0 0 10px #000"><span class="dn" style="color:#fff"></span><span class="dw" style="color:#ff9f0a"></span></div>
+</section>
+
+<section class="face center" data-face="Parlayan" style="background:radial-gradient(120% 150% at 18% 8%, #4a2a66 0%, #2b1844 42%, #110a1e 100%)">
+  <div class="t-hm" style="font-family:Outfit, sans-serif; font-weight:500; font-size:58cqh; line-height:1; letter-spacing:-0.03em; color:#ecc0ff; text-shadow:0 0 2.5cqh rgba(236,192,255,.55), 0 0 10cqh rgba(168,96,230,.4)"></div>
+  <div class="date" style="position:absolute; left:50%; bottom:8cqh; transform:translateX(-50%); gap:.35em; font-family:Outfit, sans-serif; font-weight:500; font-size:6cqh"><span class="dn" style="color:#fff"></span><span class="dw" style="color:#ecc0ff"></span></div>
+</section>
+
+<section class="face center" data-face="Modernist">
+  <div id="modern" style="display:flex; font-family:Anton, sans-serif; font-size:50cqw; line-height:1; letter-spacing:-0.02em; white-space:nowrap; transform-origin:center">
+    <span class="t-hh" style="color:#fff"></span><span class="t-mm" style="color:#5d5d62; margin-left:0.06em"></span>
+  </div>
+  <div class="date" style="position:absolute; right:3cqw; bottom:4cqh; gap:.35em; font-family:Outfit, sans-serif; font-weight:500; font-size:6cqh; mix-blend-mode:difference"><span class="dn" style="color:#fff"></span><span class="dw" style="color:#fff"></span></div>
+</section>
+
+<section class="face" data-face="Klasik" style="background:radial-gradient(120% 120% at 50% 45%, #141210, #000 75%)">
+  <div style="position:absolute; inset:2cqh; border:0.6cqh solid #b8932f; border-radius:3.5cqh; box-shadow:inset 0 0 0 0.25cqh #000, inset 0 0 0 0.45cqh #6b5a2a"></div>
+  <div id="kl-ticks"></div>
+  <div class="num" style="left:50%; top:21%; font-family:'Cormorant Garamond', serif; font-weight:600; font-size:15cqh; color:#d9b85c">XII</div>
+  <div class="num" style="left:81%; top:50%; font-family:'Cormorant Garamond', serif; font-weight:600; font-size:15cqh; color:#d9b85c">III</div>
+  <div class="num" style="left:50%; top:79%; font-family:'Cormorant Garamond', serif; font-weight:600; font-size:15cqh; color:#d9b85c">VI</div>
+  <div class="num" style="left:19%; top:50%; font-family:'Cormorant Garamond', serif; font-weight:600; font-size:15cqh; color:#d9b85c">IX</div>
+  <div class="date" style="position:absolute; left:69.5%; top:50%; transform:translate(-50%,-50%); gap:.3em; font-family:'Cormorant Garamond', serif; font-weight:600; font-size:7.5cqh"><span class="dn" style="color:#f4e19c"></span><span class="dw" style="color:#b8932f"></span></div>
+  <div class="hand hour"><i class="stem" style="background:#c9a94f"></i><i class="blade" style="height:19cqh; background:linear-gradient(90deg, #9d7c1e, #f4e19c 50%, #9d7c1e)"></i></div>
+  <div class="hand min"><i class="stem" style="background:#c9a94f"></i><i class="blade" style="height:34cqh; background:linear-gradient(90deg, #9d7c1e, #f4e19c 50%, #9d7c1e)"></i></div>
+  <div class="sec" hidden><i style="background:#e2c46d"></i></div>
+  <div class="cap" style="background:radial-gradient(circle, #000 0 0.5cqh, #f4e19c 0.6cqh 1.3cqh, #9d7c1e 1.4cqh)"></div>
+</section>
+
+<section class="face center" data-face="Minimal">
+  <div style="position:relative; width:100%; display:flex; flex-direction:column; align-items:center">
+    <div class="t-hm" style="font-family:Outfit, sans-serif; font-weight:200; font-size:56cqh; line-height:1; letter-spacing:.04em; color:#fff"></div>
+    <div style="position:relative; width:100%; height:1px; background:#2c2c2e; margin-top:7cqh">
+      <div id="min-fill" style="position:absolute; left:0; top:0; height:1px; background:#fff; transition:width .6s ease"></div>
+    </div>
+    <div class="date" style="position:absolute; right:5cqw; bottom:3.5cqh; gap:.35em; font-family:Outfit, sans-serif; font-weight:400; font-size:5cqh; letter-spacing:.06em"><span class="dn" style="color:#fff"></span><span class="dw" style="color:#8e8e93"></span></div>
+  </div>
+</section>
+
+<section class="face" data-face="Yıldız">
+  <div id="bg-stars"></div>
+  <div id="stars" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%)"></div>
+  <div class="date" style="position:absolute; left:50%; bottom:6cqh; transform:translateX(-50%); gap:.35em; font-family:Outfit, sans-serif; font-weight:400; font-size:5cqh; letter-spacing:.08em"><span class="dn" style="color:#a09b8e"></span><span class="dw" style="color:#6a675f"></span></div>
+</section>
+
+<section class="face center" data-face="Ay" style="gap:8cqw">
+  <svg viewBox="-50 -50 100 100" style="width:60cqh; height:60cqh; flex:none" aria-hidden="true">
+    <circle r="48" fill="#bdb7a6"></circle>
+    <circle cx="-14" cy="-18" r="9" fill="rgba(0,0,0,.09)"></circle>
+    <circle cx="16" cy="6" r="13" fill="rgba(0,0,0,.07)"></circle>
+    <circle cx="-8" cy="22" r="6" fill="rgba(0,0,0,.1)"></circle>
+    <circle cx="26" cy="-24" r="4" fill="rgba(0,0,0,.1)"></circle>
+    <path id="moon-shadow" fill="#070708"></path>
+    <circle r="48" fill="none" stroke="#2a2a2e" stroke-width="0.8"></circle>
+  </svg>
+  <div style="display:flex; flex-direction:column; gap:2.5cqh">
+    <div class="t-hm" style="font-family:Outfit, sans-serif; font-weight:300; font-size:30cqh; line-height:1; letter-spacing:-.01em; color:#bdb7a6"></div>
+    <div id="moon-name" style="font-family:Outfit, sans-serif; font-weight:400; font-size:6cqh; line-height:1; color:#7d786c"></div>
+    <div class="date" style="gap:.35em; font-family:Outfit, sans-serif; font-weight:400; font-size:6cqh"><span class="dn" style="color:#bdb7a6"></span><span class="dw" style="color:#7d786c"></span></div>
+  </div>
+</section>
+
+<section class="face" data-face="Sözcük" style="display:flex; align-items:center; padding-left:9cqw; box-sizing:border-box">
+  <div id="words" style="display:flex; flex-direction:column; font-family:'Cormorant Garamond', serif; font-weight:500; font-size:19cqh; line-height:1.02; letter-spacing:-.01em"></div>
+  <div class="date" style="position:absolute; right:6cqw; bottom:6cqh; gap:.3em; font-family:'Cormorant Garamond', serif; font-weight:600; font-size:7cqh"><span class="dn" style="color:#c4bfb2"></span><span class="dw" style="color:#6a675f"></span></div>
+</section>
+
+</div>
+</div>
+
+<div id="dim"></div>
+
+<div id="dots" hidden></div>
+
+<div id="bat-hit" aria-label="Pil göstergesi">
+  <div id="bat" hidden>
+    <svg viewBox="0 0 36 36"><circle id="bat-track" cx="18" cy="18" r="15.9155" fill="none" stroke-width="3.4"></circle><circle id="bat-ring" cx="18" cy="18" r="15.9155" fill="none" stroke-width="3.4" stroke-linecap="round"></circle></svg>
+    <div id="bat-num" class="bat-c"></div>
+    <div id="bat-bolt" class="bat-c" hidden><svg viewBox="0 0 12 18"><polygon points="7,0 0,10 5,10 4,18 12,7 7,7"></polygon></svg></div>
+  </div>
+</div>
+
+<div id="install" hidden>
+  <img src="icon-192.png" alt="">
+  <div style="flex:1; min-width:0">
+    <div style="font-weight:600; font-size:15px; line-height:1.2">Ana ekrana ekle</div>
+    <div style="font-size:13px; line-height:1.35; color:#b4b4b8; margin-top:3px">Safari'de Paylaş'a dokun, sonra “Ana Ekrana Ekle”yi seç. Tam ekran açılır.</div>
+  </div>
+  <button type="button" class="btn" data-act="install-ok">Anladım</button>
+</div>
+
+<div id="sheet-bg" hidden>
+  <div id="sheet" role="dialog" aria-label="Ayarlar">
+    <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:6px">
+      <div style="font-weight:600; font-size:17px">Ayarlar</div>
+      <div style="font-size:12px; color:#8e8e93">Yüz değiştir: sağa/sola kaydır · Pil: sağ üst köşe</div>
+    </div>
+    <div class="grid">
+      <div class="row"><span>Saat biçimi</span>
+        <div class="seg"><button type="button" data-set="h24" data-val="true">24 saat</button><button type="button" data-set="h24" data-val="false">12 saat</button></div>
+      </div>
+      <div class="row"><span>Gece modu</span><button type="button" class="sw" role="switch" data-toggle="night" aria-label="Gece modu"></button></div>
+      <div class="row"><span>Tarih</span><button type="button" class="sw" role="switch" data-toggle="date" aria-label="Tarih"></button></div>
+      <div class="row"><span>Saniye ibresi</span><button type="button" class="sw" role="switch" data-toggle="sec" aria-label="Saniye ibresi"></button></div>
+      <div class="row"><span>Loşluk</span>
+        <div style="display:flex; align-items:center; gap:10px"><input id="dim-range" type="range" min="0" max="70" step="5" aria-label="Loşluk" style="width:130px"><span id="dim-label" style="font-size:13px; color:#8e8e93; width:34px; text-align:right"></span></div>
+      </div>
+      <div class="row"><span>Gün dili</span>
+        <div class="seg"><button type="button" data-set="lang" data-val="tr">Türkçe</button><button type="button" data-set="lang" data-val="en">English</button></div>
+      </div>
+      <div class="row">
+        <div><div>Ekran açık kalsın</div><div id="wake-text" style="font-size:12px; color:#8e8e93; margin-top:1px"></div></div>
+        <button type="button" class="sw" role="switch" data-toggle="awake" aria-label="Ekran açık kalsın"></button>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; gap:12px">
+      <div id="bat-source" style="font-size:12px; color:#636366"></div>
+      <button type="button" class="btn" data-act="close" style="padding:9px 18px">Kapat</button>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -60,6 +60,16 @@ function renderYuvarlak(hh, mm) {
   const pal = ['#0b64cc', '#4da3f0'];
   const mk = (s, off) => s.split('').map((ch, i) => `<span style="color:${pal[(i + off) % 2]};z-index:${(i + off) % 2 ? 3 : 2}">${ch}</span>`).join('');
   $('#yv').innerHTML = mk(hh, 0) + '<div class="yv-colon"><i></i><i></i></div>' + mk(mm, hh.length);
+  fitYuvarlak();
+}
+// Yalnız taşan saatlerde (08:08 gibi) küçültür; yatayda Dynamic Island kenarda ~52pt yer tutar.
+function fitYuvarlak() {
+  const el = $('#yv');
+  el.style.fontSize = '';
+  if (!S.size.w) return;
+  const cs = getComputedStyle(el), sx = parseFloat(cs.getPropertyValue('--sx')) || 1;
+  const w = el.scrollWidth * sx, max = 0.88 * S.size.w;
+  if (w > max) el.style.fontSize = (parseFloat(cs.fontSize) * max / w).toFixed(1) + 'px';
 }
 
 // Dikdörtgen kadranın 60 çizgisi; yalnız ekran boyutu değişince hesaplanır.
@@ -203,6 +213,7 @@ function measure() {
   $('#modern').style.transform = `scaleY(${scale.toFixed(3)})`;
   const { hh, mm } = timeParts();
   renderStars(hh, mm);
+  fitYuvarlak();
 }
 
 // ---------- yüzler arası geçiş ----------
@@ -421,6 +432,9 @@ scheduleTick();
 syncSec();
 maybeLoadMap(S.index);
 requestWake();
+// Fredoka gibi geç yüklenen font gelince genişlik değişir; yeniden sığdır.
+document.fonts.ready.then(fitYuvarlak);
+document.fonts.addEventListener('loadingdone', fitYuvarlak);
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();

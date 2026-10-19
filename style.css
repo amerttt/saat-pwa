@@ -22,10 +22,17 @@ body.night #faces{filter:grayscale(1) brightness(.5)}
 .date{display:flex;line-height:1}
 body:not(.show-date) .date{display:none}
 
-/* Yuvarlak */
+/* Yuvarlak: kullanıcının referans görüntüsüne göre ölçüldü (16:38, iPhone 15 yatay).
+   iPhone'da sistemin yuvarlak fontu (SF Pro Rounded), başka cihazda Fredoka.
+   Rakam yüksekliği ekranın ~%74'ü; referanstaki dar rakamlar için yatayda %93 sıkıştırılır.
+   Çok geniş saatlerde app.js fitYuvarlak() boyutu Dynamic Island'a değmeyecek kadar küçültür. */
+#yv{--sx:.93;display:flex;align-items:center;font-family:ui-rounded,Fredoka,sans-serif;font-weight:800;font-size:100cqh;line-height:1;letter-spacing:-.17em;padding-right:.17em;transform:translateY(-.022em) scaleX(var(--sx))}
 #yv>span{mix-blend-mode:screen;position:relative}
-.yv-colon{display:flex;flex-direction:column;gap:13cqh;margin:0 .04em 0 .2em;position:relative;z-index:6}
-.yv-colon>i{display:block;width:9cqh;height:9cqh;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f1f5f9,#98a1ab)}
+.yv-colon{display:flex;flex-direction:column;gap:.155em;margin:0 -.15em 0 .03em;position:relative;z-index:6}
+/* Genişlik sıkıştırmayı telafi eder, noktalar daire kalır. Referanstaki gibi hafif eğik dizilir. */
+.yv-colon>i{display:block;width:calc(.18em / var(--sx));height:.18em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f1f5f9,#98a1ab)}
+.yv-colon>i:first-child{transform:translateX(.0123em)}
+.yv-colon>i:last-child{transform:translateX(-.0123em)}
 
 /* Analog + Klasik */
 .tick{position:absolute;border-radius:9px}

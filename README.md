@@ -23,6 +23,7 @@ Canlı adres: https://amerttt.github.io/saat-pwa/
 Çalışma anında hiçbir kütüphane ya da dış istek yoktur. Düz HTML, CSS ve JavaScript.
 
 - Fontlar (Fredoka, Outfit, Anton, Unbounded, Cormorant Garamond) `fonts/` altında, yalnız latin ve latin-ext subset'leri. Lisans: SIL Open Font License.
+- Yuvarlak yüzü iPhone'da sistemin yuvarlak fontunu (`ui-rounded`, SF Pro Rounded) kullanır. Font cihazda zaten var, repo'ya gömülmez. Apple dışı cihazlarda Fredoka devreye girer.
 - Dünya haritası `land-dots.json` dosyasındaki önceden hesaplanmış 1.706 noktadır. Kaynak: `world-atlas@2` countries-110m (Natural Earth, public domain), 82°K ile 58°G arasında 3°'lik ızgara.
 - Wake Lock yedeği olan sessiz video NoSleep.js 0.12.0'dan alındı (MIT).
 - `sw.js` bütün dosyaları kurulumda önbelleğe alır. Bir dosyayı değiştirince `sw.js` içindeki `VERSION` değerini artır.

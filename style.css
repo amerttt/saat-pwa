@@ -12,11 +12,13 @@ input[type=range]{accent-color:#fff}
 #stage{position:absolute;left:0;top:0;width:100%;height:100%;transform-origin:0 0;container-type:size;overflow:hidden;background:#000}
 #stage.portrait{transform:rotate(90deg) translateY(-100%)}
 
-#faces{position:absolute;inset:0}
-body.night #faces{filter:grayscale(1) brightness(.5)}
-#track{display:flex;height:100%;width:1000%;will-change:transform;transition:transform .45s cubic-bezier(.22,.61,.36,1)}
+/* overflow:hidden: gece filtresi 21 yüzlük şeridin tamamına değil, yalnız ekrana uygulanır. */
+#faces{position:absolute;inset:0;overflow:hidden}
+body.night #faces{filter:grayscale(1) sepia(.35) brightness(.55)}
+/* --n: yüz sayısı, app.js FACES.length'ten verir. */
+#track{display:flex;height:100%;width:calc(var(--n,21) * 100%);will-change:transform;transition:transform .45s cubic-bezier(.22,.61,.36,1)}
 #track.dragging{transition:none}
-.face{flex:0 0 10%;height:100%;position:relative;overflow:hidden;background:#000}
+.face{flex:0 0 calc(100% / var(--n,21));height:100%;position:relative;overflow:hidden;background:#000}
 .face.center{display:flex;align-items:center;justify-content:center}
 
 .date{display:flex;line-height:1}
@@ -56,6 +58,62 @@ body:not(.show-date) .date{display:none}
 
 #map svg{width:100%;height:100%;display:block}
 
+/* ---- v2 yüzleri ---- */
+.bgdots{position:absolute;inset:0}
+.bgdots>i{position:absolute;border-radius:50%;background:#9a90c4}
+
+/* Kontur: aynı metnin 6 kopyası; geniş kontur altta, siyah dolgulu kopya en üstte */
+.kt{color:transparent;paint-order:stroke fill}
+.kt+.kt{position:absolute;inset:0}
+/* Dilim: üç yatay dilim; ortadaki yarım ton nokta deseni */
+.dl+.dl{position:absolute;inset:0}
+.dl-dots{color:transparent;background:radial-gradient(circle,#ffb03a 0 42%,transparent 46%) 0 0/1.5cqh 1.5cqh;-webkit-background-clip:text;background-clip:text}
+.fit{transform-origin:center}
+
+/* Çetele */
+.ct-row{display:flex;align-items:center;gap:3cqw;font-family:Outfit,sans-serif;font-weight:500;font-size:3.6cqh;letter-spacing:.22em;line-height:1;white-space:nowrap}
+.ct-row b{font-weight:500;color:#f2efe6}
+.ct-hazard{display:block;margin-left:auto;width:16cqw;height:1.8cqh;background:repeating-linear-gradient(45deg,#ffc400 0 1.1cqh,#000 1.1cqh 2.2cqh)}
+
+/* Odak */
+#fc-boxes>i{display:block;width:2.6cqh;height:2.6cqh;box-sizing:border-box;border:.35cqh solid #ff5a1f}
+#fc-boxes>i.on{background:#ff5a1f}
+
+/* Gün Yayı: etiketler HTML */
+.sa-lab{position:absolute;top:77%;translate:-50% 0;text-align:center;white-space:nowrap;font-family:Outfit,sans-serif;line-height:1.15}
+.sa-k{font-weight:500;font-size:3cqh;letter-spacing:.15em;color:#8e8e93}
+.sa-v{font-weight:400;font-size:5.5cqh;color:#e5e5ea}
+
+/* Nixie */
+.nx-tube{position:relative;width:min(26cqh,18cqw);height:66cqh;border-radius:11cqh 11cqh 1cqh 1cqh;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle,rgba(255,150,80,.07) 0 22%,transparent 26%) 0 0/1.3cqh 1.3cqh,linear-gradient(90deg,rgba(255,255,255,.035),rgba(255,255,255,.09) 28%,rgba(255,255,255,.025) 62%,rgba(255,255,255,.06));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.09)}
+.nx-tube::before{content:"";position:absolute;left:17%;top:7%;width:7%;height:58%;border-radius:99px;background:linear-gradient(rgba(255,255,255,.16),rgba(255,255,255,0))}
+.nx-tube::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6cqh;background:linear-gradient(#1c130c,#080503)}
+.nx-tube>span{position:absolute;margin-top:-3cqh;font-family:Outfit,sans-serif;font-weight:300;font-size:min(40cqh,28cqw);line-height:1}
+.nx-ghost{color:rgba(255,140,60,.07)}
+.nx-d{color:#ffc08a;text-shadow:0 0 .6cqh #ff8a2a,0 0 2.5cqh #ff5e00,0 0 6cqh rgba(255,80,0,.55)}
+.nx-colon{height:66cqh;display:flex;flex-direction:column;justify-content:center;gap:12cqh;padding-bottom:6cqh;box-sizing:border-box}
+.nx-colon>i{display:block;width:2.4cqh;height:2.4cqh;border-radius:50%;background:#ffb066;box-shadow:0 0 1cqh #ff8a2a,0 0 3cqh rgba(255,94,0,.6)}
+.nx-plinth{height:7cqh;min-width:min(124cqh,92cqw);border-radius:.8cqh;background:linear-gradient(#4a2c17,#26150a);box-shadow:0 1.5cqh 4cqh rgba(0,0,0,.6)}
+
+/* İkili */
+.bcol{display:flex;flex-direction:column;align-items:center;gap:4cqh;--c:#5ac8fa;--g:rgba(90,200,250,.45)}
+.bcol.m{--c:#ff9f0a;--g:rgba(255,159,10,.45)}
+.bcol.gap{margin-left:4cqh}
+.bd{width:11cqh;height:11cqh;border-radius:50%;background:#1c1c1e}
+.bd.on{background:var(--c);box-shadow:0 0 2.5cqh var(--g)}
+.bd.na{opacity:0}
+.bdig{height:6cqh;font-family:Outfit,sans-serif;font-weight:500;font-size:6cqh;line-height:1;color:var(--c)}
+.bleg{display:flex;flex-direction:column;gap:4cqh;font-family:Outfit,sans-serif;font-weight:500;font-size:3.4cqh;color:#48484a}
+.bleg>span{height:11cqh;display:flex;align-items:center}
+
+/* Daktilo */
+#dk>span{display:inline-block}
+
+/* Lav: konumlar dakikada bir değişir, aradaki yol 24 saniyelik geçişle alınır */
+#lava>i{position:absolute;left:0;top:0;border-radius:50%;transition:transform 24s cubic-bezier(.45,0,.55,1)}
+
 #dim{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:20}
 
 #dots{position:absolute;left:50%;bottom:2.5cqh;transform:translateX(-50%);display:flex;gap:7px;z-index:22;pointer-events:none;animation:fadeIn .2s ease}
@@ -88,6 +146,10 @@ button{font:inherit;color:inherit;border:0;margin:0;background:none;cursor:point
 .seg{display:flex;background:#2c2c2e;border-radius:9px;padding:2px;font-size:13px;font-weight:500}
 .seg>button{padding:5px 12px;border-radius:7px;color:#aeaeb2}
 .seg>button.sel{background:#636366;color:#fff}
+.step{display:flex;align-items:center;background:#2c2c2e;border-radius:9px;padding:2px;font-size:13px;font-weight:500}
+.step>button{width:32px;height:27px;border-radius:7px;font-size:18px;line-height:1}
+.step>button:active{background:#636366}
+.step>span{min-width:52px;text-align:center}
 .sw{flex:none;width:51px;height:31px;border-radius:16px;background:#39393d;position:relative;transition:background .2s;padding:0}
 .sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 2px 4px rgba(0,0,0,.3)}
 .sw[aria-checked=true]{background:#30d158}

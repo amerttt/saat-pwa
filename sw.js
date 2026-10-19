@@ -1,6 +1,6 @@
 // Bütün dosyalar kurulumda önbelleğe alınır; uygulama ilk açılıştan sonra ağsız çalışır.
 // Dosya değişince VERSION'ı artır, eski önbellek activate'te silinir.
-const VERSION = 'saat-v3';
+const VERSION = 'saat-v4';
 const ASSETS = [
   './',
   'index.html',
@@ -22,7 +22,13 @@ const ASSETS = [
   'fonts/outfit-latin-ebadd8.woff2',
   'fonts/outfit-latin-ext-744997.woff2',
   'fonts/unbounded-latin-c22c22.woff2',
-  'fonts/unbounded-latin-ext-e699bb.woff2'
+  'fonts/unbounded-latin-ext-e699bb.woff2',
+  'fonts/courier-prime-latin-b927e4.woff2',
+  'fonts/courier-prime-latin-ext-cb90cc.woff2',
+  'fonts/saira-stencil-one-latin-7d6d2b.woff2',
+  'fonts/saira-stencil-one-latin-ext-3e238e.woff2',
+  'fonts/special-elite-latin-f087a5.woff2',
+  'fonts/special-elite-latin-ext-f9d1b8.woff2'
 ];
 
 self.addEventListener('install', e => {

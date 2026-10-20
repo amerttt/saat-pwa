@@ -6,10 +6,12 @@ Canlı adres: https://amerttt.github.io/saat-pwa/
 
 ## Kullanım
 
-- Sağa/sola kaydırarak 21 yüz arasında geçilir: Yuvarlak, Analog, Dünya, Parlayan, Modernist, Klasik, Minimal, Yıldız, Ay, Sözcük, Kontur, Dilim, Yörünge, Çetele, Odak, Gün Yayı, Nixie, Kum Saati, İkili, Daktilo, Lav. Klavyede ok tuşları da çalışır.
-- Ekrana uzun basınca (yaklaşık yarım saniye) ayarlar açılır: saat biçimi, gece modu, tarih, saniye ibresi, loşluk, gün dili, ekranı açık tutma, odak süresi.
+- Sağa/sola kaydırarak 30 yüz arasında geçilir: Yuvarlak, Analog, Dünya, Parlayan, Modernist, Klasik, Minimal, Yıldız, Ay, Sözcük, Kontur, Dilim, Yörünge, Çetele, Odak, Gün Yayı, Nixie, Kum Saati, İkili, Daktilo, Lav, Jenerik, Borsa, Sürü, Not, Mesai, Pencere, Flip, Tablo, Bölgeler. Klavyede ok tuşları da çalışır.
+- Ekrana uzun basınca (yaklaşık yarım saniye) ayarlar açılır: saat biçimi, gece modu, tarih, saniye ibresi, loşluk, gün dili, ekranı açık tutma, odak süresi, mesai başı ve sonu (Mesai yüzü için, varsayılan 09:00-18:00).
 - Odak yüzünde ekrana dokunmak (kaydırmak değil) odak zamanlayıcısını başlatır ya da durdurur. Süre ayarlardan 5 ile 120 dakika arasında 5'er dakikalık adımlarla değişir, varsayılan 25. Biten oturum sayısı `saat.focus` anahtarında tutulur, gün değişince sıfırlanır.
 - Gün Yayı yüzü İstanbul'un gün doğumu ve batımını NOAA denklemleriyle cihazda hesaplar, internet gerekmez.
+- Bölgeler yüzü AWS bölgelerinin yerel saatini cihazın saat dilimi veritabanından hesaplar; hafta içi 09-18 arasındaki bölgeler turuncu yanar. Harita Dünya yüzüyle aynı yerel nokta listesini kullanır, internet gerekmez.
+- Açık zeminli gündüz yüzleri (Sürü, Not, Mesai, Pencere, Flip, Tablo) gece modunda ters çevrilir ve sıcak griye düşer.
 - Battery API olan tarayıcılarda sağ üst köşeye dokunmak pil göstergesini açıp kapatır.
 - Son seçilen yüz ve ayarlar `localStorage` içinde `saat.v1` anahtarında saklanır.
 
@@ -25,7 +27,7 @@ Canlı adres: https://amerttt.github.io/saat-pwa/
 
 Çalışma anında hiçbir kütüphane ya da dış istek yoktur. Düz HTML, CSS ve JavaScript.
 
-- Fontlar (Fredoka, Outfit, Anton, Unbounded, Cormorant Garamond, Saira Stencil One, Special Elite, Courier Prime) `fonts/` altında, yalnız latin ve latin-ext subset'leri. Lisans: SIL Open Font License, Special Elite için Apache 2.0.
+- Fontlar (Fredoka, Outfit, Anton, Unbounded, Cormorant Garamond, Saira Stencil One, Special Elite, Courier Prime, Bodoni Moda, IBM Plex Mono, Permanent Marker) `fonts/` altında, yalnız latin ve latin-ext subset'leri. Lisans: SIL Open Font License; Special Elite ve Permanent Marker için Apache 2.0.
 - Yuvarlak yüzü iPhone'da sistemin yuvarlak fontunu (`ui-rounded`, SF Pro Rounded) kullanır. Font cihazda zaten var, repo'ya gömülmez. Apple dışı cihazlarda Fredoka devreye girer.
 - Dünya haritası `land-dots.json` dosyasındaki önceden hesaplanmış 1.706 noktadır. Kaynak: `world-atlas@2` countries-110m (Natural Earth, public domain), 82°K ile 58°G arasında 3°'lik ızgara.
 - Wake Lock yedeği olan sessiz video NoSleep.js 0.12.0'dan alındı (MIT).

@@ -1,10 +1,13 @@
 'use strict';
 (() => {
 const FACES = ['Yuvarlak','Analog','Dünya','Parlayan','Modernist','Klasik','Minimal','Yıldız','Ay','Sözcük',
-  'Kontur','Dilim','Yörünge','Çetele','Odak','Gün Yayı','Nixie','Kum Saati','İkili','Daktilo','Lav'];
-const MAP_IDX = 2, LAVA_IDX = FACES.indexOf('Lav'), FOCUS_IDX = FACES.indexOf('Odak');
+  'Kontur','Dilim','Yörünge','Çetele','Odak','Gün Yayı','Nixie','Kum Saati','İkili','Daktilo','Lav',
+  'Jenerik','Borsa','Sürü','Not','Mesai','Pencere','Flip','Tablo','Bölgeler'];
+const MAP_IDX = 2, LAVA_IDX = FACES.indexOf('Lav'), FOCUS_IDX = FACES.indexOf('Odak'), REGION_IDX = FACES.indexOf('Bölgeler');
 const KEY = 'saat.v1';
-const DEF = { h24: true, night: false, date: false, lang: 'tr', awake: true, dim: 0, sec: false, focusMin: 25 };
+const DEF = { h24: true, night: false, date: false, lang: 'tr', awake: true, dim: 0, sec: false, focusMin: 25, workStart: 9, workEnd: 18 };
+// Bölgeler yüzü: AWS bölgeleri, yerel saatleri cihazın saat dilimi veritabanından (Intl) hesaplanır.
+const REGIONS = [{ code: 'us-west-2', tz: 'America/Los_Angeles', lat: 45.5, lon: -122.7, s: 'l' }, { code: 'us-east-1', tz: 'America/New_York', lat: 38.9, lon: -77.4, s: 'r' }, { code: 'sa-east-1', tz: 'America/Sao_Paulo', lat: -23.5, lon: -46.6, s: 'r' }, { code: 'eu-west-1', tz: 'Europe/Dublin', lat: 53.3, lon: -6.3, s: 'l' }, { code: 'eu-central-1', tz: 'Europe/Berlin', lat: 50.1, lon: 8.7, s: 'r' }, { code: 'ap-south-1', tz: 'Asia/Kolkata', lat: 19.1, lon: 72.9, s: 'l' }, { code: 'ap-northeast-1', tz: 'Asia/Tokyo', lat: 35.7, lon: 139.7, s: 'b' }, { code: 'ap-southeast-2', tz: 'Australia/Sydney', lat: -33.9, lon: 151.2, s: 'b' }];
 const DIGITS = { '0': ['01110','10001','10011','10101','11001','10001','01110'], '1': ['00100','01100','00100','00100','00100','00100','01110'], '2': ['01110','10001','00001','00010','00100','01000','11111'], '3': ['11111','00010','00100','00010','00001','10001','01110'], '4': ['00010','00110','01010','10010','11111','00010','00010'], '5': ['11111','10000','11110','00001','00001','10001','01110'], '6': ['00110','01000','10000','11110','10001','10001','01110'], '7': ['11111','00001','00010','00100','01000','01000','01000'], '8': ['01110','10001','10001','01110','10001','10001','01110'], '9': ['01110','10001','10001','01111','00001','00010','01100'] };
 const TRN = ['','bir','iki','üç','dört','beş','altı','yedi','sekiz','dokuz'], TRT = ['','on','yirmi','otuz','kırk','elli'];
 const trNum = n => (TRT[Math.floor(n / 10)] + ' ' + TRN[n % 10]).trim();
@@ -29,6 +32,9 @@ const $$ = s => document.querySelectorAll(s);
 const pad = n => String(n).padStart(2, '0');
 // Tohumlu rastgele sayı: aynı tohum her seferinde aynı diziyi verir.
 const rng = seed => { let s = seed % 2147483646 + 1; return () => (s = s * 16807 % 2147483647) / 2147483647; };
+// Referans tasarımın kendi üreteci (tohum olduğu gibi kullanılır); desenler birebir aynı çıksın diye.
+const lcg = seed => { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
+const upTR = (s, en) => en ? s.toUpperCase() : s.toLocaleUpperCase('tr-TR');
 const dayKey = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 const root = $('#root'), stage = $('#stage'), track = $('#track');
 
@@ -70,19 +76,31 @@ function renderTime() {
   renderNixie(hh, mm);
   renderHourglass(M);
   renderBinary(hh, mm);
-  renderDaktilo(d, H, M, hh, mm, en);
+  renderDaktilo(H, M, hh, mm);
   renderLava(d);
+  const m = d.getMonth(), w = d.getDay();
+  setText('.typed-date', en ? `${EN_MONTH[m]} ${d.getDate()}, ${d.getFullYear()}, ${EN_DAY[w]}` : `${d.getDate()} ${TR_MONTH[m]} ${d.getFullYear()}, ${TR_DAY[w]}`);
+  renderJenerik(d, en);
+  renderBorsa(d, H, M, hh, mm, en);
+  renderFlock(hh, mm);
+  renderWork(H, M, d.getDay(), en);
+  renderWindow(H, M);
+  setText('#fl-ampm', S.settings.h24 ? '' : (H < 12 ? 'AM' : 'PM'));
+  setText('#tb-formula', en ? '=NOW()' : '=ŞİMDİ()');
+  renderRegions(d, en);
   fitBlocks();
   burnInShift(d);
 }
 
 // OLED yanma koruması: bütün yüzler dakikada bir en fazla 1-2 px kayar, ±BURN_PX içinde dolaşır.
 // İki farklı periyot (17 ve 23 dakika) birlikte ~6,5 saatte bütün alanı tarar; geçiş animasyonsuzdur.
+// %2 büyütme kenarları dışarı taşırır; kayınca yandaki yüzün kenarı ya da siyah şerit görünmez
+// (açık zeminli yüzlerde fark edilirdi).
 const BURN_PX = 3;
 function burnInShift(d) {
   const t = Math.floor(d.getTime() / 60000);
   const dx = Math.round(BURN_PX * Math.sin(t * TAU / 17)), dy = Math.round(BURN_PX * Math.sin(t * TAU / 23 + 1));
-  $('#faces').style.transform = `translate(${dx}px,${dy}px)`;
+  $('#faces').style.transform = `translate(${dx}px,${dy}px) scale(1.02)`;
 }
 
 function renderYuvarlak(hh, mm) {
@@ -145,8 +163,9 @@ function renderStars(hh, mm) {
   }).join('');
 }
 
+// Kenarlardaki soluk yıldızlar: Yıldız ve Yörünge aynı tohumlu diziyi kullanır (ortadaki kutu boş kalır).
 function renderBgStars() {
-  let s = 12345; const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  const r = lcg(12345);
   let out = '', n = 0;
   while (n < 70) {
     const x = r() * 100, y = r() * 100;
@@ -156,6 +175,7 @@ function renderBgStars() {
     n++;
   }
   $('#bg-stars').innerHTML = out;
+  $('#orr-stars').innerHTML = out;
 }
 
 function renderMoon(d, en) {
@@ -170,7 +190,7 @@ function renderMoon(d, en) {
 }
 
 function renderWords(H, M, en) {
-  const h = H % 12, nh = (H + 1) % 12, L = (t, dim) => ({ t, c: dim ? '#6a675f' : '#c4bfb2' });
+  const h = H % 12, nh = (H + 1) % 12, L = (t, dim) => ({ t, c: dim ? '#d98c5f' : '#f2e6cf' });
   let lines;
   if (en) {
     if (M === 0) lines = [L(EN_H[h]), L("o'clock", true)];
@@ -191,18 +211,20 @@ function renderWords(H, M, en) {
 }
 
 // ---------- harita (nokta listesi önceden hesaplandı: land-dots.json) ----------
+// Dünya ve Bölgeler aynı listeyi kullanır; internet gerekmez.
 let mapStarted = false, mapKey = '', mapCircles = null, mapLit = null;
 function maybeLoadMap(idx) {
-  if (Math.abs(idx - MAP_IDX) > 1 || mapStarted) return;
+  if ((Math.abs(idx - MAP_IDX) > 1 && Math.abs(idx - REGION_IDX) > 1) || mapStarted) return;
   mapStarted = true;
   $('#map-pending').hidden = false;
   fetch('land-dots.json').then(r => r.json()).then(flat => {
     const pts = [];
     for (let i = 0; i < flat.length; i += 2) pts.push([flat[i], flat[i + 1]]);
     S.landDots = pts;
-    const circles = pts.map(p => `<circle cx="${p[0] + 180}" cy="${84 - p[1]}" r="1.05" fill="#3c3c42"></circle>`).join('');
-    $('#map').innerHTML = `<svg viewBox="0 0 360 142" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${circles}` +
+    const circles = fill => pts.map(p => `<circle cx="${p[0] + 180}" cy="${84 - p[1]}" r="1.05" fill="${fill}"></circle>`).join('');
+    $('#map').innerHTML = `<svg viewBox="0 0 360 142" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${circles('#3c3c42')}` +
       '<circle cx="208.97" cy="42.99" r="6" fill="rgba(255,159,10,.28)"></circle><circle cx="208.97" cy="42.99" r="3" fill="#ff9f0a"></circle></svg>';
+    $('#rg-dots').innerHTML = `<svg viewBox="0 0 360 142" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${circles('#1e2832')}</svg>`;
     mapCircles = $('#map svg').querySelectorAll('circle');
     mapLit = new Array(pts.length).fill(false);
     $('#map-pending').hidden = true;
@@ -226,7 +248,7 @@ function renderMap() {
   });
 }
 
-// ---------- v2 yüzleri ----------
+// ---------- v2/v3 yüzleri (design_handoff_saat_pwa_v3/Saat.dc.html) ----------
 // Kontur ve Dilim: blok, genişliği data-fit × ekran genişliğini aşarsa küçültülür.
 function fitBlocks() {
   if (!S.size.w) return;
@@ -237,21 +259,14 @@ function fitBlocks() {
   });
 }
 
-// Yörünge: dış yörüngede saat gezegeni (12 saatte bir tur), iç yörüngede dakika gezegeni.
+// Yörünge: dış yörüngede saat gezegeni (12 saatte bir tur), iç yörüngede dakika gezegeni ve uydusu.
 function buildOrrery() {
   let t = '';
-  for (let k = 0; k < 12; k++) {
-    const s = Math.sin(k * 30 * RAD), c = -Math.cos(k * 30 * RAD);
-    t += `<line x1="${(43 * s).toFixed(2)}" y1="${(43 * c).toFixed(2)}" x2="${(47.5 * s).toFixed(2)}" y2="${(47.5 * c).toFixed(2)}" stroke="${k ? '#3d3850' : '#ffcf73'}" stroke-width=".7" stroke-linecap="round"/>`;
+  for (let i = 0; i < 12; i++) {
+    const r1 = i % 3 ? 44.5 : 43, s = Math.sin(i * 30 * RAD), c = Math.cos(i * 30 * RAD);
+    t += `<line x1="${(r1 * s).toFixed(2)}" y1="${(-r1 * c).toFixed(2)}" x2="${(47.5 * s).toFixed(2)}" y2="${(-47.5 * c).toFixed(2)}" stroke="${i ? (i % 3 ? '#3a3646' : '#6a6480') : '#ffcf73'}" stroke-width=".6" stroke-linecap="round"/>`;
   }
   $('#orr-ticks').innerHTML = t;
-  const r = rng(4242);
-  let s = '';
-  for (let i = 0; i < 70; i++) {
-    const d = (0.25 + r() * 0.45).toFixed(2) + 'cqh';
-    s += `<i style="left:${(r() * 100).toFixed(1)}%;top:${(r() * 100).toFixed(1)}%;width:${d};height:${d};opacity:${(0.12 + r() * 0.4).toFixed(2)}"></i>`;
-  }
-  $('#orr-stars').innerHTML = s;
 }
 function renderOrrery(H, M) {
   const hf = ((H % 12) * 60 + M) / 720, mf = M / 60;
@@ -270,12 +285,12 @@ function renderOrrery(H, M) {
 
 // Çetele: 24 çentik, dörtlü grupların üstünden beşinci çapraz çizgi; geçmiş saat beyaz, şimdiki sarı.
 function buildTally() {
-  const r = rng(268), j = () => r() * 2 - 1;
+  const r = lcg(99), j = () => (r() - 0.5) * 2, fx = n => n.toFixed(1);
   let s = '';
-  for (let k = 0; k < 24; k++) {
-    const g = Math.floor(k / 5), p = k % 5, x0 = 10 + g * 52;
-    const [x1, y1, x2, y2] = p < 4 ? [x0 + p * 9, 6, x0 + p * 9, 34] : [x0 - 5, 31, x0 + 32, 9];
-    s += `<line x1="${(x1 + j()).toFixed(1)}" y1="${(y1 + j()).toFixed(1)}" x2="${(x2 + j()).toFixed(1)}" y2="${(y2 + j()).toFixed(1)}" stroke-width="3" stroke-linecap="round"/>`;
+  for (let i = 0; i < 24; i++) {
+    const g = Math.floor(i / 5), k = i % 5, gx = g * 56 + 4;
+    if (k < 4) { const x = gx + 4 + k * 10; s += `<line x1="${fx(x + j())}" y1="${fx(4 + j())}" x2="${fx(x + j())}" y2="${fx(36 + j())}" stroke-width="3" stroke-linecap="round"/>`; }
+    else s += `<line x1="${fx(gx - 2 + j())}" y1="${fx(31 + j())}" x2="${fx(gx + 40 + j())}" y2="${fx(9 + j())}" stroke-width="3" stroke-linecap="round"/>`;
   }
   $('#ct-tally').innerHTML = s;
 }
@@ -284,7 +299,8 @@ function renderCetele(d, H, M, en) {
   const doy = Math.round((Date.UTC(y, d.getMonth(), d.getDate()) - Date.UTC(y, 0, 1)) / 864e5) + 1;
   setText('#ct-doy', `${en ? 'DAY' : 'GÜN'} ${doy} / ${leap ? 366 : 365}`);
   const left = 1440 - (H * 60 + M), lh = pad(Math.floor(left / 60)), lm = pad(left % 60);
-  $('#ct-left').innerHTML = en ? `LEFT TODAY <b>${lh}</b> H <b>${lm}</b> M` : `BUGÜNDEN KALAN <b>${lh}</b> SA <b>${lm}</b> DK`;
+  setText('#ct-left-k', en ? 'LEFT TODAY' : 'BUGÜNDEN KALAN');
+  setText('#ct-left', en ? `${lh} H ${lm} M` : `${lh} SA ${lm} DK`);
   $$('#ct-tally line').forEach((el, k) => el.setAttribute('stroke', k < H ? '#f2efe6' : k === H ? '#ffc400' : '#262624'));
 }
 
@@ -318,14 +334,17 @@ function renderFocus() {
   const dur = run ? focus.dur : S.settings.focusMin;
   const left = run ? Math.max(1, Math.ceil((focusEnd() - now) / 60000)) : dur;
   const frac = run ? Math.min(1, Math.floor((now - focus.start) / 60000) / dur) : 0;
-  const num = $('#fc-num');
+  const num = $('#fc-num'), lbl = $('#fc-label');
   num.textContent = left;
   num.style.color = run ? '#fff' : '#48484a';
+  lbl.style.color = run ? '#ff5a1f' : '#636366';
   setText('#fc-label', run ? (en ? 'MIN FOCUS' : 'DK ODAK') : (en ? 'TAP TO START' : 'BAŞLAMAK İÇİN DOKUN'));
   const ring = $('#fc-ring');
   ring.setAttribute('stroke-dasharray', `${(frac * 100).toFixed(2)} 100`);
   ring.style.visibility = frac > 0 ? '' : 'hidden';
-  $$('#fc-boxes>i').forEach((el, i) => el.classList.toggle('on', i < focus.n));
+  // Kareler dörtlü tur sayar: 4, 8, 12… oturumda dördü de dolu görünür.
+  const filled = focus.n % 4 || (focus.n ? 4 : 0);
+  $$('#fc-boxes>i').forEach((el, i) => el.classList.toggle('on', i < filled));
   setText('#fc-count', (en ? 'TODAY ' : 'BUGÜN ') + focus.n);
 }
 
@@ -381,17 +400,19 @@ function renderNixie(hh, mm) {
 
 // Kum Saati: kum her saat başı yenilenir; üst yüzey 24'ten 70'e iner, alt yığın 44 birime kadar büyür.
 function renderHourglass(M) {
-  const f = M / 60, ys = 24 + f * 46, h = f * 44;
-  $('#hg-top').setAttribute('d', `M 0 ${ys.toFixed(1)} Q 50 ${Math.min(ys + 5, 70).toFixed(1)} 100 ${ys.toFixed(1)} L 100 70 L 0 70 Z`);
-  $('#hg-bot').setAttribute('d', `M 0 130 V ${(130 - 0.4 * h).toFixed(1)} Q 50 ${(130 - 1.6 * h).toFixed(1)} 100 ${(130 - 0.4 * h).toFixed(1)} V 130 Z`);
-  $('#hg-stream').setAttribute('y2', (130 - h).toFixed(1));
+  const fr = M / 60, yT = 24 + fr * 46, h = fr * 44, dip = Math.min(6, 70 - yT), f2 = n => n.toFixed(2);
+  $('#hg-top').setAttribute('d', `M 0 ${f2(yT)} Q 50 ${f2(yT + dip)} 100 ${f2(yT)} V 70 H 0 Z`);
+  const bot = $('#hg-bot');
+  if (h > 0) bot.setAttribute('d', `M 0 128 L 100 128 L 100 ${f2(128 - h * 0.55)} Q 50 ${f2(128 - h * 1.25)} 0 ${f2(128 - h * 0.55)} Z`);
+  else bot.removeAttribute('d');
+  $('#hg-stream').setAttribute('y2', f2(128 - h * 1.05));
 }
 
 // İkili (BCD): sütunlar saat onlar/birler, dakika onlar/birler; satırlar 8-4-2-1.
 // Hiç yanamayacak bitler gizli: saat onlar en fazla 2 (2 bit), dakika onlar en fazla 5 (3 bit).
 const BIN_BITS = [2, 4, 3, 4];
 function buildBinary() {
-  const leg = '<div class="bleg">' + [8, 4, 2, 1].map(b => `<span>${b}</span>`).join('') + '<span style="height:6cqh"></span></div>';
+  const leg = '<div class="bleg">' + [8, 4, 2, 1].map(b => `<span>${b}</span>`).join('') + '</div>';
   const col = i => `<div class="bcol${i > 1 ? ' m' : ''}${i === 2 ? ' gap' : ''}">` + '<i class="bd"></i>'.repeat(4) + '<div class="bdig"></div></div>';
   $('#bin').innerHTML = leg + [0, 1, 2, 3].map(col).join('');
 }
@@ -407,23 +428,20 @@ function renderBinary(hh, mm) {
 }
 
 // Daktilo: her karakter tohumlu titreme alır; tohum günün dakikası, desen dakikada bir değişir.
-function renderDaktilo(d, H, M, hh, mm, en) {
-  const r = rng(H * 60 + M + 1);
+function renderDaktilo(H, M, hh, mm) {
+  const r0 = lcg((H * 60 + M) * 7919 + 13), r = () => r0() - 0.5;
   $('#dk').innerHTML = (hh + ':' + mm).split('').map((ch, i) => {
-    const ty = (r() * 1.4).toFixed(2), rot = ((r() * 2 - 1) * 1.75).toFixed(2), op = Math.min(1, 0.86 + r() * 0.28).toFixed(2);
-    return `<span style="transform:translateY(${ty}cqh) rotate(${rot}deg);opacity:${op};color:${i > hh.length ? '#d9463b' : '#e8e2d4'}">${ch}</span>`;
+    const o = (0.86 + Math.abs(r()) * 0.28).toFixed(2), y = (r() * 1.4).toFixed(2), rot = (r() * 3.5).toFixed(2);
+    return `<span style="color:${i > hh.length ? '#d9463b' : '#e8e2d4'};opacity:${o};transform:translateY(${y}cqh) rotate(${rot}deg)">${ch}</span>`;
   }).join('');
-  const m = d.getMonth(), w = d.getDay();
-  setText('#dk-date', en ? `${EN_MONTH[m]} ${d.getDate()}, ${d.getFullYear()}, ${EN_DAY[w]}` : `${d.getDate()} ${TR_MONTH[m]} ${d.getFullYear()}, ${TR_DAY[w]}`);
 }
 
 // Lav: altı yumuşak leke. Yalnız yüz ekrandayken, dakikada bir yeni konuma 24 saniyede kayar.
 const LAVA = [[70, '#ff5a1f'], [55, '#ff2d2d'], [85, '#ff8a1f'], [48, '#e8341c'], [62, '#ffb03a'], [40, '#ff4a2a']];
 let lavaKey = -1;
 function buildLava() {
-  const r = rng(77);
   $('#lava').innerHTML = LAVA.map(([s, c]) =>
-    `<i style="width:${s}cqh;height:${s}cqh;opacity:${(0.55 + r() * 0.35).toFixed(2)};background:radial-gradient(circle,${c} 0 30%,transparent 70%);transition:none"></i>`).join('');
+    `<i style="width:${s}cqh;height:${s}cqh;background:radial-gradient(circle,${c} 0%,${c} 30%,transparent 70%);transition:none"></i>`).join('');
   renderLava(S.now, true);
   void $('#lava').offsetWidth;
   $$('#lava>i').forEach(el => { el.style.transition = ''; });
@@ -433,10 +451,162 @@ function renderLava(d, force) {
   const mod = d.getHours() * 60 + d.getMinutes();
   if (mod === lavaKey) return;
   lavaKey = mod;
-  const r = rng(mod + 1000);
-  $$('#lava>i').forEach(el => {
-    el.style.transform = `translate(${(12 + r() * 76).toFixed(1)}cqw, ${(18 + r() * 64).toFixed(1)}cqh) translate(-50%, -50%)`;
+  const r = lcg(mod * 2654435 % 2147483647 || 7);
+  $$('#lava>i').forEach((el, i) => {
+    const half = LAVA[i][0] / 2;
+    el.style.opacity = (0.55 + r() * 0.35).toFixed(2);
+    el.style.transform = `translate(calc(${(r() * 100).toFixed(1)}cqw - ${half}cqh), calc(${(r() * 110 - 5).toFixed(1)}cqh - ${half}cqh))`;
   });
+}
+
+// Jenerik: grenli ev videosu karesi; altta günün adı, köşede ekran üstü tarih.
+function renderJenerik(d, en) {
+  const m = d.getMonth(), mon3 = upTR((en ? EN_MONTH : TR_MONTH)[m].slice(0, 3), en);
+  setText('#jn-title', upTR((en ? EN_DAY : TR_DAY)[d.getDay()], en));
+  setText('#jn-date', en ? `${mon3}. ${d.getDate()} ${d.getFullYear()}` : `${d.getDate()} ${mon3} ${d.getFullYear()}`);
+}
+
+// Borsa: saat hisse fiyatı gibi (16.38 ▲). Grafik saat başına tohumlu, dakika dakika uzar.
+// Piyasa durumu cihazın yerel saatine göre (tasarımdaki gibi).
+let bsKey = '';
+function renderBorsa(d, H, M, hh, mm, en) {
+  const h24 = S.settings.h24, key = [H, M, en, h24].join('|');
+  if (key === bsKey) return;
+  bsKey = key;
+  const r0 = lcg(((H + 1) * 48271) % 2147483647), r = () => r0() - 0.5;
+  const vals = [0]; for (let i = 1; i < 60; i++) vals.push(vals[i - 1] + r() * 2.2 + 0.1);
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = (hi - lo) || 1;
+  const pts = vals.slice(0, M + 1).map((v, i) => [(i / 59 * 600).toFixed(1), (92 - (v - lo) / span * 84).toFixed(1)]);
+  const last = pts[pts.length - 1], line = pts.map(p => p.join(',')).join(' ');
+  const pm = M ? M - 1 : 59, ph = M ? H : (H + 23) % 24;
+  const cur = Number(hh) * 100 + M, prev = (h24 ? ph : (ph % 12 || 12)) * 100 + pm, delta = cur - prev, up = delta >= 0;
+  const col = up ? '#30d158' : '#ff453a', pct = prev ? (Math.abs(delta) / prev * 100).toFixed(2) + '%' : '—';
+  const mins = H * 60 + M, dow = d.getDay(), wk = dow >= 1 && dow <= 5;
+  const st = !wk ? 3 : mins >= 570 && mins < 960 ? 0 : mins >= 240 && mins < 570 ? 1 : mins >= 960 && mins < 1200 ? 2 : 3;
+  const hA = h => h24 ? pad(h) : String(h % 12 || 12), mon3 = upTR((en ? EN_MONTH : TR_MONTH)[d.getMonth()].slice(0, 3), en);
+  setText('#bs-status', (en ? ['MARKET OPEN', 'PRE-MARKET', 'AFTER HOURS', 'CLOSED'] : ['PİYASA AÇIK', 'AÇILIŞ ÖNCESİ', 'KAPANIŞ SONRASI', 'KAPALI'])[st]);
+  $('#bs-dot').style.background = ['#30d158', '#ff9f0a', '#ff9f0a', '#48484a'][st];
+  setText('#bs-price', (h24 ? String(H) : hh) + '.' + mm);
+  $('#bs-chg').style.color = col;
+  setText('#bs-delta', (up ? '▲ ' : '▼ ') + (Math.abs(delta) / 100).toFixed(2));
+  setText('#bs-pct', (up ? '+' : '−') + pct);
+  const l = $('#bs-line'), a = $('#bs-area'), p = $('#bs-pt');
+  l.setAttribute('points', line); l.setAttribute('stroke', col);
+  a.setAttribute('points', line + ` ${last[0]},100 0,100`); a.setAttribute('fill', up ? 'rgba(48,209,88,.12)' : 'rgba(255,69,58,.12)');
+  Object.assign(p.style, { left: (M / 59 * 100).toFixed(2) + '%', top: last[1] + '%', background: col, boxShadow: `0 0 1.6cqh ${col}` });
+  $('#bs-axis').innerHTML = [hA(H) + ':00', ':15', ':30', ':45', hA((H + 1) % 24) + ':00'].map(t => `<span>${t}</span>`).join('');
+  setText('#bs-date', `${(en ? EN : TR)[dow]} ${d.getDate()} ${mon3} ${d.getFullYear()}`);
+}
+
+// Sürü: kuşlar 5×7 nokta matrisinde saati yazar; kenarda birkaç başıboş kuş.
+const BIRD = '<path d="M0 7 Q5 0 10 5 Q15 0 20 7" fill="none" stroke="#24364a" stroke-width="2.2" stroke-linecap="round"/>';
+const birdSvg = (x, y, w, h, r, o) => `<svg class="bird" viewBox="0 0 20 8" style="left:${x};top:${y};width:${w};height:${h};transform:rotate(${r});opacity:${o}">${BIRD}</svg>`;
+function buildStrayBirds() {
+  const r = lcg(4242);
+  let out = '', n = 0;
+  while (n < 9) {
+    const x = 3 + r() * 94, y = 6 + r() * 88;
+    if (x > 16 && x < 84 && y > 20 && y < 80) continue;
+    const w = 2.2 + r() * 1.4;
+    out += birdSvg(x.toFixed(1) + '%', y.toFixed(1) + '%', w.toFixed(2) + 'cqh', (w * 0.4).toFixed(2) + 'cqh', ((r() - .5) * 30).toFixed(1) + 'deg', (0.4 + r() * 0.35).toFixed(2));
+    n++;
+  }
+  $('#sr-stray').innerHTML = out;
+}
+let flockKey = '';
+function renderFlock(hh, mm) {
+  const { w: W, h: Hh } = S.size, t = hh + ':' + mm;
+  if (!W) return;
+  const cols = t.split('').reduce((a, ch, i) => a + (i ? 1.5 : 0) + (ch === ':' ? 1 : 5), 0);
+  const u = Math.min(0.062 * Hh, 0.86 * W / cols), key = t + '@' + u.toFixed(2);
+  if (key === flockKey) return;
+  flockKey = key;
+  const rnd = lcg(31);
+  let x = 0, out = '';
+  const put = (cx, cy) => {
+    const w = u * (0.8 + rnd() * 0.25), bh = w * 0.4;
+    const px = (cx - w / 2 + (rnd() - .5) * .16 * u).toFixed(1) + 'px', py = (cy - bh / 2 + (rnd() - .5) * .16 * u).toFixed(1) + 'px';
+    out += birdSvg(px, py, w.toFixed(1) + 'px', bh.toFixed(1) + 'px', ((rnd() - .5) * 26).toFixed(1) + 'deg', (0.7 + rnd() * 0.3).toFixed(2));
+  };
+  t.split('').forEach((ch, ci) => {
+    if (ci) x += 1.5 * u;
+    if (ch === ':') { [2, 4].forEach(r => put(x + u / 2, r * u + u / 2)); x += u; }
+    else { (DIGITS[ch] || []).forEach((row, r) => { for (let c = 0; c < 5; c++) if (row[c] === '1') put(x + c * u + u / 2, r * u + u / 2); }); x += 5 * u; }
+  });
+  const el = $('#sr-flock');
+  el.style.width = x.toFixed(1) + 'px';
+  el.style.height = (7 * u).toFixed(1) + 'px';
+  el.innerHTML = out;
+}
+
+// Mesai: gün çizelgesi ve bitime kalan süre. Saatler ayarlardan (Mesai başı / sonu).
+function renderWork(H, M, dow, en) {
+  const h24 = S.settings.h24, ws = S.settings.workStart;
+  let we = S.settings.workEnd; if (we <= ws) we = ws + 1;
+  const mins = H * 60 + M, s = ws * 60, e = we * 60, wk = dow >= 1 && dow <= 5;
+  const hA = x => h24 ? pad(x % 24) : String(x % 12 || 12);
+  const fmt = n => { const a = Math.floor(n / 60), b = n % 60; return en ? (a ? a + 'h ' + b + 'm' : b + 'm') : (a ? a + ' sa ' + b + ' dk' : b + ' dk'); };
+  const f = Math.max(0, Math.min(1, (mins - s) / (e - s)));
+  let label, value, color = '#17181c';
+  if (!wk) { label = en ? 'WEEKEND' : 'HAFTA SONU'; value = en ? 'Off' : 'Tatil'; }
+  else if (mins < s) { label = en ? 'STARTS IN' : 'MESAİYE'; value = fmt(s - mins); }
+  else if (mins < e) { label = en ? 'TIME LEFT' : 'BİTİME KALAN'; value = fmt(e - mins); color = '#f05d23'; }
+  else { label = en ? 'WORKDAY' : 'MESAİ'; value = en ? 'Done' : 'Bitti'; }
+  setText('#ms-label', label); setText('#ms-value', value); $('#ms-value').style.color = color;
+  const fill = wk ? '#f05d23' : '#c9c5bc', pct = (f * 100).toFixed(2) + '%';
+  let ticks = '', labels = '';
+  for (let x = ws; x <= we; x++) {
+    const lx = ((x - ws) / (we - ws) * 100).toFixed(2) + '%';
+    ticks += `<i style="position:absolute;left:${lx};top:0;width:1px;height:9cqh;margin-left:-.5px;background:#cfcbc2"></i>`;
+    labels += `<span style="position:absolute;left:${lx};top:11.5cqh;transform:translateX(-50%);font-family:Outfit,sans-serif;font-weight:500;font-size:3.4cqh;line-height:1;color:${(wk && mins >= x * 60) ? '#17181c' : '#aaa69e'}">${hA(x)}</span>`;
+  }
+  $('#ms-bar').innerHTML = ticks +
+    '<i style="position:absolute;left:0;right:0;top:5cqh;height:1.6cqh;border-radius:1cqh;background:#dcd8cf"></i>' +
+    `<i style="position:absolute;left:0;top:5cqh;height:1.6cqh;border-radius:1cqh;width:${pct};background:${fill}"></i>` +
+    `<i style="position:absolute;left:${pct};top:5.8cqh;width:4cqh;height:4cqh;margin:-2cqh 0 0 -2cqh;border-radius:50%;background:${fill};box-shadow:0 0 0 .8cqh #f4f2ec"></i>` + labels;
+}
+
+// Pencere: gün boyu pencereden düşen ışık soldan sağa kayar ve renk değiştirir; gece ay ışığı.
+function renderWindow(H, M) {
+  const mins = H * 60 + M, el = $('#pw-win');
+  let x, tr, c;
+  if (mins < 360 || mins >= 1200) { x = '52cqw'; tr = 'skewX(8deg) scaleY(1.05)'; c = 'rgba(190,205,240,.38)'; }
+  else {
+    const t = (mins - 360) / 840, stops = [[0, 255, 205, 140, .78], [0.2, 255, 232, 190, .85], [0.5, 255, 247, 226, .9], [0.8, 255, 226, 172, .85], [1, 255, 165, 95, .78]];
+    let a = stops[0], b = stops[1];
+    for (let i = 0; i < stops.length - 1; i++) if (t >= stops[i][0] && t <= stops[i + 1][0]) { a = stops[i]; b = stops[i + 1]; break; }
+    const k = (t - a[0]) / ((b[0] - a[0]) || 1), L = i => a[i] + (b[i] - a[i]) * k;
+    x = (66 - 54 * t).toFixed(1) + 'cqw';
+    tr = 'skewX(' + ((t - 0.5) * -36).toFixed(1) + 'deg) scaleY(' + (1.15 - 0.3 * Math.sin(Math.PI * t)).toFixed(3) + ')';
+    c = 'rgba(' + Math.round(L(1)) + ',' + Math.round(L(2)) + ',' + Math.round(L(3)) + ',' + L(4).toFixed(2) + ')';
+  }
+  el.style.left = x; el.style.transform = tr; el.style.setProperty('--wc', c);
+}
+
+// Bölgeler: AWS bölgelerinin yerel saati; hafta içi 09-18 arası olanlar turuncu.
+let rgKey = '', tzFmt = {};
+function renderRegions(d, en) {
+  const h24 = S.settings.h24, key = [d.getDate(), d.getHours(), d.getMinutes(), en, h24].join('|');
+  if (key === rgKey) return;
+  rgKey = key;
+  let on = 0;
+  $('#rg-pins').innerHTML = REGIONS.map(r => {
+    const p = {};
+    try {
+      const f = tzFmt[r.tz] || (tzFmt[r.tz] = new Intl.DateTimeFormat('en-US', { timeZone: r.tz, hour: 'numeric', minute: '2-digit', hourCycle: 'h23', weekday: 'short' }));
+      f.formatToParts(d).forEach(x => { p[x.type] = x.value; });
+    } catch (e) {}
+    const rh = Number(p.hour || 0) % 24, live = p.weekday !== 'Sat' && p.weekday !== 'Sun' && rh >= 9 && rh < 18;
+    if (live) on++;
+    const t = (h24 ? pad(rh) : String(rh % 12 || 12)) + ':' + (p.minute || '00');
+    const tr = { l: 'translate(calc(-100% - 2.2cqh), -50%)', r: 'translate(2.2cqh, -50%)', b: 'translate(-50%, 2.2cqh)' }[r.s];
+    const items = r.s === 'l' ? 'flex-end' : r.s === 'b' ? 'center' : 'flex-start', align = r.s === 'l' ? 'right' : r.s === 'b' ? 'center' : 'left';
+    return `<div class="rg-pin" style="left:${((r.lon + 180) / 3.6).toFixed(2)}%;top:${((84 - r.lat) / 1.42).toFixed(2)}%">` +
+      `<i style="background:${live ? '#ffb347' : 'transparent'};border-color:${live ? '#ffb347' : '#5b6977'};box-shadow:${live ? '0 0 0 .8cqh rgba(255,179,71,.2), 0 0 3cqh rgba(255,179,71,.55)' : 'none'}"></i>` +
+      `<div style="transform:${tr};align-items:${items};text-align:${align}"><span class="rg-code" style="color:${live ? '#ffb347' : '#5f6b78'}">${r.code}</span><span class="rg-time" style="color:${live ? '#f3f5f7' : '#7d8894'}">${t}</span></div></div>`;
+  }).join('');
+  setText('#rg-head', en ? 'IN BUSINESS HOURS' : 'MESAİDEKİ BÖLGELER');
+  setText('#rg-count', on + ' / ' + REGIONS.length);
 }
 
 // ---------- yerleşim ----------
@@ -455,6 +625,7 @@ function measure() {
   $('#modern').style.transform = `scaleY(${scale.toFixed(3)})`;
   const { hh, mm } = timeParts();
   renderStars(hh, mm);
+  renderFlock(hh, mm);
   fitYuvarlak();
   fitBlocks();
 }
@@ -620,7 +791,10 @@ $('#sheet').addEventListener('click', e => {
   if (b.dataset.act === 'close') return closeSheet();
   if (b.dataset.toggle) return setSetting(b.dataset.toggle, !S.settings[b.dataset.toggle]);
   if (b.dataset.set) return setSetting(b.dataset.set, b.dataset.val === 'true' ? true : b.dataset.val === 'false' ? false : b.dataset.val);
-  if (b.dataset.step) return setSetting('focusMin', Math.max(5, Math.min(120, S.settings.focusMin + Number(b.dataset.step))));
+  if (b.dataset.step) {
+    const st = b.closest('.step'), k = st.dataset.key;
+    return setSetting(k, Math.max(+st.dataset.min, Math.min(+st.dataset.max, S.settings[k] + Number(b.dataset.step))));
+  }
 });
 $('#dim-range').addEventListener('input', e => setSetting('dim', Number(e.target.value)));
 
@@ -631,6 +805,7 @@ function setSetting(k, v) {
   if (k === 'sec') syncSec();
   if (k === 'h24' || k === 'lang') renderTime();
   if (k === 'focusMin') renderFocus();
+  if (k === 'workStart' || k === 'workEnd') renderWork(S.now.getHours(), S.now.getMinutes(), S.now.getDay(), S.settings.lang === 'en');
 }
 function applySettings() {
   const st = S.settings;
@@ -647,7 +822,10 @@ function renderSettings() {
   setText('#dim-label', (st.dim || 0) + '%');
   setText('#wake-text', WAKE_TEXT[S.wake]);
   setText('#bat-source', S.battery ? 'Pil: cihazdan okunuyor' : '');
-  setText('#focus-min', st.focusMin + ' dk');
+  $$('#sheet .step').forEach(el => {
+    const k = el.dataset.key, v = st[k];
+    el.querySelector('span').textContent = k === 'focusMin' ? v + ' dk' : pad(v) + ':00';
+  });
 }
 
 // ---------- kurulum ipucu ----------
@@ -677,6 +855,7 @@ renderBgStars();
 buildOrrery();
 buildTally();
 buildBinary();
+buildStrayBirds();
 $('#fc-boxes').innerHTML = '<i></i>'.repeat(4);
 measure();
 buildLava();

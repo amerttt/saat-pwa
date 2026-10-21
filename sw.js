@@ -1,6 +1,6 @@
 // Bütün dosyalar kurulumda önbelleğe alınır; uygulama ilk açılıştan sonra ağsız çalışır.
 // Dosya değişince VERSION'ı artır, eski önbellek activate'te silinir.
-const VERSION = 'saat-v5';
+const VERSION = 'saat-v6';
 const ASSETS = [
   './',
   'index.html',

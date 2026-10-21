@@ -474,13 +474,15 @@ function renderBorsa(d, H, M, hh, mm, en) {
   if (key === bsKey) return;
   bsKey = key;
   const r0 = lcg(((H + 1) * 48271) % 2147483647), r = () => r0() - 0.5;
-  const vals = [0]; for (let i = 1; i < 60; i++) vals.push(vals[i - 1] + r() * 2.2 + 0.1);
+  // Her saatin kendi eğilimi var: bazı saatler yükselir, bazıları düşer.
+  const drift = r() * 0.3;
+  const vals = [0]; for (let i = 1; i < 60; i++) vals.push(vals[i - 1] + r() * 2.2 + drift);
   const lo = Math.min(...vals), hi = Math.max(...vals), span = (hi - lo) || 1;
   const pts = vals.slice(0, M + 1).map((v, i) => [(i / 59 * 600).toFixed(1), (92 - (v - lo) / span * 84).toFixed(1)]);
   const last = pts[pts.length - 1], line = pts.map(p => p.join(',')).join(' ');
-  const pm = M ? M - 1 : 59, ph = M ? H : (H + 23) % 24;
-  const cur = Number(hh) * 100 + M, prev = (h24 ? ph : (ph % 12 || 12)) * 100 + pm, delta = cur - prev, up = delta >= 0;
-  const col = up ? '#30d158' : '#ff453a', pct = prev ? (Math.abs(delta) / prev * 100).toFixed(2) + '%' : '—';
+  // Değişim saat başından bu yana grafiğin çıkışı/düşüşü; fiyat (saat) üzerinden yüzdeye çevrilir.
+  const price = Number((h24 ? String(H) : hh) + '.' + mm), delta = (vals[M] - vals[0]) * 0.06, up = delta >= 0;
+  const col = up ? '#30d158' : '#ff453a', pct = (Math.abs(delta) / Math.max(price, 5) * 100).toFixed(2) + '%';  // gece yarısı fiyat ~0, yüzde şişmesin
   const mins = H * 60 + M, dow = d.getDay(), wk = dow >= 1 && dow <= 5;
   const st = !wk ? 3 : mins >= 570 && mins < 960 ? 0 : mins >= 240 && mins < 570 ? 1 : mins >= 960 && mins < 1200 ? 2 : 3;
   const hA = h => h24 ? pad(h) : String(h % 12 || 12), mon3 = upTR((en ? EN_MONTH : TR_MONTH)[d.getMonth()].slice(0, 3), en);
@@ -488,7 +490,7 @@ function renderBorsa(d, H, M, hh, mm, en) {
   $('#bs-dot').style.background = ['#30d158', '#ff9f0a', '#ff9f0a', '#48484a'][st];
   setText('#bs-price', (h24 ? String(H) : hh) + '.' + mm);
   $('#bs-chg').style.color = col;
-  setText('#bs-delta', (up ? '▲ ' : '▼ ') + (Math.abs(delta) / 100).toFixed(2));
+  setText('#bs-delta', (up ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(2));
   setText('#bs-pct', (up ? '+' : '−') + pct);
   const l = $('#bs-line'), a = $('#bs-area'), p = $('#bs-pt');
   l.setAttribute('points', line); l.setAttribute('stroke', col);

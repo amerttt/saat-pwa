@@ -475,14 +475,24 @@ function renderBorsa(d, H, M, hh, mm, en) {
   bsKey = key;
   const r0 = lcg(((H + 1) * 48271) % 2147483647), r = () => r0() - 0.5;
   // Her saatin kendi eğilimi var: bazı saatler yükselir, bazıları düşer.
-  const drift = r() * 0.3;
+  // Gece (00:00-06:00) piyasa çöküyor: grafik dik iner.
+  const crash = H < 6, drift = crash ? -0.9 + r() * 0.3 : r() * 0.3;
   const vals = [0]; for (let i = 1; i < 60; i++) vals.push(vals[i - 1] + r() * 2.2 + drift);
   const lo = Math.min(...vals), hi = Math.max(...vals), span = (hi - lo) || 1;
   const pts = vals.slice(0, M + 1).map((v, i) => [(i / 59 * 600).toFixed(1), (92 - (v - lo) / span * 84).toFixed(1)]);
   const last = pts[pts.length - 1], line = pts.map(p => p.join(',')).join(' ');
   // Değişim saat başından bu yana grafiğin çıkışı/düşüşü; fiyat (saat) üzerinden yüzdeye çevrilir.
-  const price = Number((h24 ? String(H) : hh) + '.' + mm), delta = (vals[M] - vals[0]) * 0.06, up = delta >= 0;
-  const col = up ? '#30d158' : '#ff453a', pct = (Math.abs(delta) / Math.max(price, 5) * 100).toFixed(2) + '%';  // gece yarısı fiyat ~0, yüzde şişmesin
+  const price = Number((h24 ? String(H) : hh) + '.' + mm), delta = (vals[M] - vals[0]) * 0.06;
+  let up = delta >= 0;
+  let col = up ? '#30d158' : '#ff453a', pct = (Math.abs(delta) / Math.max(price, 5) * 100).toFixed(2) + '%';  // gece yarısı fiyat ~0, yüzde şişmesin
+  // Gece çöküşü: her dakika yeni bir uçuk düşüş, %15 ile %75 arası, hep kırmızı.
+  let dAbs = Math.abs(delta);
+  if (crash) {
+    // Dakikaya göre karışık ama her seferinde aynı sayı (ardışık dakikalar birbirine benzemesin diye hash).
+    let k = Math.imul((H * 60 + M) ^ 0x9e3779b9, 0x85ebca6b); k = Math.imul(k ^ (k >>> 13), 0xc2b2ae35); k ^= k >>> 16;
+    const p = 15 + ((k >>> 0) / 4294967296) * 60;
+    up = false; col = '#ff453a'; pct = p.toFixed(2) + '%'; dAbs = p / 100 * Math.max(price, 5);
+  }
   const mins = H * 60 + M, dow = d.getDay(), wk = dow >= 1 && dow <= 5;
   const st = !wk ? 3 : mins >= 570 && mins < 960 ? 0 : mins >= 240 && mins < 570 ? 1 : mins >= 960 && mins < 1200 ? 2 : 3;
   const hA = h => h24 ? pad(h) : String(h % 12 || 12), mon3 = upTR((en ? EN_MONTH : TR_MONTH)[d.getMonth()].slice(0, 3), en);
@@ -490,7 +500,7 @@ function renderBorsa(d, H, M, hh, mm, en) {
   $('#bs-dot').style.background = ['#30d158', '#ff9f0a', '#ff9f0a', '#48484a'][st];
   setText('#bs-price', (h24 ? String(H) : hh) + '.' + mm);
   $('#bs-chg').style.color = col;
-  setText('#bs-delta', (up ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(2));
+  setText('#bs-delta', (up ? '▲ ' : '▼ ') + dAbs.toFixed(2));
   setText('#bs-pct', (up ? '+' : '−') + pct);
   const l = $('#bs-line'), a = $('#bs-area'), p = $('#bs-pt');
   l.setAttribute('points', line); l.setAttribute('stroke', col);

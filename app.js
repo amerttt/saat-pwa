@@ -477,8 +477,12 @@ function renderBorsa(d, H, M, hh, mm, en) {
   const r0 = lcg(((H + 1) * 48271) % 2147483647), r = () => r0() - 0.5;
   // Her saatin kendi eğilimi var: bazı saatler yükselir, bazıları düşer.
   // Gece (00:00-06:00) piyasa çöküyor: grafik dik iner.
-  const crash = H < 6, drift = crash ? -0.9 + r() * 0.3 : r() * 0.3;
-  const vals = [0]; for (let i = 1; i < 60; i++) vals.push(vals[i - 1] + r() * 2.2 + drift);
+  // Akşam (17:30-24:00) tersi: piyasa uçuyor, grafik dik çıkar. 17. saatte yükseliş :30'da başlar.
+  const crash = H < 6, rally = H * 60 + M >= 1050, base = r() * 0.3, push = 0.9 + r() * 0.3;
+  const vals = [0]; for (let i = 1; i < 60; i++) {
+    const drift = crash ? -push : (rally && (H > 17 || i >= 30)) ? push : base;
+    vals.push(vals[i - 1] + r() * 2.2 + drift);
+  }
   const lo = Math.min(...vals), hi = Math.max(...vals), span = (hi - lo) || 1;
   const pts = vals.slice(0, M + 1).map((v, i) => [(i / 59 * 600).toFixed(1), (92 - (v - lo) / span * 84).toFixed(1)]);
   const last = pts[pts.length - 1], line = pts.map(p => p.join(',')).join(' ');
@@ -486,13 +490,13 @@ function renderBorsa(d, H, M, hh, mm, en) {
   const price = Number((h24 ? String(H) : hh) + '.' + mm), delta = (vals[M] - vals[0]) * 0.06;
   let up = delta >= 0;
   let col = up ? '#30d158' : '#ff453a', pct = (Math.abs(delta) / Math.max(price, 5) * 100).toFixed(2) + '%';  // gece yarısı fiyat ~0, yüzde şişmesin
-  // Gece çöküşü: her dakika yeni bir uçuk düşüş, %15 ile %75 arası, hep kırmızı.
+  // Gece çöküşü (kırmızı) ve akşam yükselişi (yeşil): her dakika yeni bir uçuk değişim, %15 ile %75 arası.
   let dAbs = Math.abs(delta);
-  if (crash) {
+  if (crash || rally) {
     // Dakikaya göre karışık ama her seferinde aynı sayı (ardışık dakikalar birbirine benzemesin diye hash).
-    let k = Math.imul((H * 60 + M) ^ 0x9e3779b9, 0x85ebca6b); k = Math.imul(k ^ (k >>> 13), 0xc2b2ae35); k ^= k >>> 16;
+    let k = Math.imul((H * 60 + M) ^ (crash ? 0x9e3779b9 : 0x7f4a7c15), 0x85ebca6b); k = Math.imul(k ^ (k >>> 13), 0xc2b2ae35); k ^= k >>> 16;
     const p = 15 + ((k >>> 0) / 4294967296) * 60;
-    up = false; col = '#ff453a'; pct = p.toFixed(2) + '%'; dAbs = p / 100 * Math.max(price, 5);
+    up = rally; col = rally ? '#30d158' : '#ff453a'; pct = p.toFixed(2) + '%'; dAbs = p / 100 * Math.max(price, 5);
   }
   const mins = H * 60 + M, dow = d.getDay(), wk = dow >= 1 && dow <= 5;
   const st = !wk ? 3 : mins >= 570 && mins < 960 ? 0 : mins >= 240 && mins < 570 ? 1 : mins >= 960 && mins < 1200 ? 2 : 3;
